@@ -1,0 +1,72 @@
+@charset "UTF-8";
+
+
+
+#survey_container{
+    margin-top: 5%;
+}
+.form-control{
+    padding: 10px;
+}
+#intro{
+    font-size: 40px;
+    margin-top: 5%;
+    margin-left: 40px;
+    text-indent: 10px;
+    line-height: 80px; 
+}
+
+#detail_info{
+    margin-left: 20px;
+    font-size: 40px;
+    margin-top: 100px;
+    text-indent: 10px;    
+}
+#alert_info{
+    font-size: 40px;
+    margin-top: 100px;
+    margin-left: 50px;
+
+}
+.join_limit{
+    display: flex;
+}
+.date_container{
+    display: flex;
+}
+#detail_list{
+    list-style: circle;
+    margin-left: 20px;
+    
+}
+#detail_list>li{
+    margin-top: 20px ;
+}
+
+#alert_info_title{
+    line-height: 20px;
+}
+.queType_container{
+    display: none;
+}
+#alert_info_text{
+    margin-top: 10px;
+  
+}
+
+#btn_container{
+    float: right;
+}
+#btn_container>button{
+    width: 70px;
+    height: 50px;
+}
+.selContent_container{
+	display:none;
+}
+.text2{
+    margin-top: 10px;
+}
+.survey_content{
+    margin-top: 20px;
+}

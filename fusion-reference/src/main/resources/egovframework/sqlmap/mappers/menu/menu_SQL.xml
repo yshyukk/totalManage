@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.fusion.totalManagement.service.MenuMapper">
+
+<select id="getMenuList" resultType="menuVo">
+	SELECT MENU_ID AS menuId
+		,  MENU_NAME AS menuName
+		,  MENU_TYPE AS menuType
+		,  MENU_PATH AS menuPath
+		,  MENU_ORDER AS menuOrder
+		,  DEL_YN AS delYn
+		,  ACCESS_ROLE AS accessRole
+		,  SUBSTR(MENU_PATH, -1, 1) AS boardNum
+	FROM TB_MENU
+	WHERE ACCESS_ROLE <![CDATA[>=]]> #{userRole}
+	AND DEL_YN = 'N'
+	ORDER BY MENU_ORDER
+</select>
+
+<select id="getUserAuth" resultType="Integer">
+	SELECT ACCESS_ROLE
+	FROM TB_MENU
+	WHERE MENU_ID = #{menuId}	
+</select>
+
+<insert id="insMenuInfo" parameterType="menuVo">
+	INSERT INTO TB_MENU
+	(
+		MENU_ID
+	,	MENU_NAME
+	,	MENU_TYPE
+	,	MENU_PATH
+	,	MENU_ORDER
+	,	DEL_YN
+	,	ACCESS_ROLE
+	)
+	VALUES
+	(
+		MENU_ID_SEQ.NEXTVAL
+	,	#{menuName}
+	,	#{menuType}
+	<if	test="menuType!=0">
+	,	#{menuPath}||TO_CHAR(MENU_ID_SEQ.NEXTVAL)||'&amp;boardNum='||(SELECT max(SUBSTR(MENU_PATH, -1, 1))+1 FROM TB_MENU WHERE MENU_TYPE = #{menuType})
+	</if>
+	<if test="menuType=0">
+	,	#{menuPath}||TO_CHAR(MENU_ID_SEQ.NEXTVAL)||'&amp;boardNum='||(SELECT max(SUBSTR(MENU_PATH, -1, 1))+1 FROM TB_MENU WHERE MENU_TYPE = #{menuType})
+	</if>
+	,   MENU_ID_SEQ.NEXTVAL
+	,   'N'
+	,	#{accessRole}
+	)
+</insert>
+
+
+<select id="getOneMenuInfo" parameterType="menuVo" resultType="menuVo">
+	SELECT MENU_ID AS menuId
+		,  MENU_NAME AS menuName
+		,  MENU_TYPE AS menuType
+		,  MENU_PATH AS menuPath
+		,  MENU_ORDER AS menuOrder
+		,  DEL_YN AS delYn
+		,  ACCESS_ROLE AS accessRole
+	FROM TB_MENU
+	WHERE MENU_ID = #{menuId}
+
+</select>
+
+<update id="updMenuInfo" parameterType="menuVo">
+	UPDATE TB_MENU
+	SET ACCESS_ROLE = #{accessRole}
+	  , MENU_NAME = #{menuName}
+	  <if test="menuType!=0">
+	  ,	MENU_PATH = #{menuPath}||TO_CHAR(MENU_ID_SEQ.NEXTVAL)||'&amp;boardNum='||(SELECT max(SUBSTR(MENU_PATH, -1, 1))+1 FROM TB_MENU WHERE MENU_TYPE = #{menuType})
+	  </if>
+	  <if test="menuType=0">
+	  ,	MENU_PATH = #{menuPath}||TO_CHAR(MENU_ID_SEQ.NEXTVAL)||'&amp;boardNum='||(SELECT max(SUBSTR(MENU_PATH, -1, 1))+1 FROM TB_MENU WHERE MENU_TYPE = #{menuType})
+	  </if>
+	WHERE MENU_ID = #{menuId}
+</update>
+
+<update id="delMenuInfo" parameterType="menuVo">
+	UPDATE TB_MENU
+	SET DEL_YN = 'Y'
+	WHERE MENU_ID = #{menuId}
+</update>
+
+<select id="getBoardNum" resultType="Integer">
+	SELECT SUBSTR(MENU_PATH, -1, 1) AS boardNum
+	  FROM TB_MENU
+	  WHERE MENU_TYPE=1
+</select>
+
+<select id="getGalBoardNum" resultType="Integer">
+	SELECT SUBSTR(MENU_PATH, -1, 1) AS galBoardNum
+	  FROM TB_MENU
+	  WHERE MENU_TYPE=2
+</select>
+
+<select id="getBoardSearchRes" parameterType="totalSearchDto" resultType="boardVo">
+    <foreach collection="boardNum" item="item" separator="UNION">
+  	SELECT FA.*
+	FROM (
+		 SELECT A.BOARD_ID AS boardId
+			   , A.TITLE AS title
+			   , NCNM AS id
+			   , A.BOARD_CNT AS board_Cnt 
+			   , A.DEL_YN AS delYn
+			   , A.WRITER AS writer
+			   , A.REGIST_DT as regist_DT
+			   , A.BOARD_NUM as boardNum
+			   , ROWNUM as contentOrder
+		  FROM TB_BOARD A
+			 , TB_USER B 
+		  WHERE DEL_YN = 'N'
+	      AND A.WRITER = B.ID
+	      AND A.BOARD_TYPE = 1
+		  AND A.BOARD_NUM = #{item}
+          AND ( A.TITLE LIKE '%'||#{searchText}||'%'
+          	    OR A.WRITER LIKE '%'||#{searchText}||'%'
+		 	  )
+          AND  ROWNUM BETWEEN 1 AND 5
+          ORDER BY A.REGIST_DT DESC
+		)FA		 	  
+	  </foreach>
+  	ORDER BY contentOrder DESC
+	  
+</select>
+
+</mapper>

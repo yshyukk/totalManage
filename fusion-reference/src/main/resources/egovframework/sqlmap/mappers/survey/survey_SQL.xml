@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="egovframework.fusion.survey.service.SurveyMapper">
+
+
+	<!-- 설문조사 LIST출력 -->
+	<select id="getSurveyList" resultType="surveyVo">
+		
+		SELECT D.*
+		    , ROW_NUMBER() OVER (ORDER BY D.boardNum DESC) AS orderCri
+	    FROM(
+			SELECT C.* 
+		        , ROW_NUMBER() OVER (ORDER BY C.surveyId) AS boardNum
+		  	FROM (
+				SELECT 
+				 DISTINCT A.SURVEY_ID AS surveyId
+				, A.SURVEY_TITLE AS surveyTitle
+				, A.PARTICIPANT AS participant
+				, A.PARTICIPANT_CNT AS participantCnt
+				, A.WIN_DT AS winDt
+				, A.REGIST_DT AS registDt
+				, A.START_DT AS startDt
+				, A.END_DT AS endDt
+				, A.DEL_YN AS delYn
+				, COUNT (B.SURVEY_ID) OVER (PARTITION BY B.SURVEY_ID) AS updLimit
+				FROM TB_SURVEY A
+				LEFT JOIN TB_SURVEY_LOG B
+				ON A.SURVEY_ID = B.SURVEY_ID
+				ORDER BY A.SURVEY_ID DESC
+		    )C
+	   )D
+	</select>
+
+	<!-- 내가 참여한 설문 리스트 출력 -->
+	<select id="getSurveyMyList" parameterType="surveyVo"
+		resultType="surveyVo">
+
+		SELECT ROW_NUMBER() OVER (ORDER BY A.SURVEY_ID DESC) AS boardNum
+			, A.SURVEY_ID AS surveyId
+			, A.SURVEY_TITLE AS surveyTitle
+			, A.PARTICIPANT AS participant
+			, A.PARTICIPANT_CNT AS participantCnt
+			, A.WIN_DT AS winDt
+			, A.START_DT AS startDt
+			, A.END_DT AS endDt
+			, A.DEL_YN AS delYn
+			, B.USER_ID AS userId
+			, B.SURVEY_LOG_ID surveyLogId
+			, B.REGIST_DT AS registDt
+			, COUNT(B.SURVEY_ID) OVER (PARTITION BY B.SURVEY_ID, B.USER_ID)AS myListCount
+		FROM TB_SURVEY A
+		JOIN TB_SURVEY_LOG B
+		ON A.SURVEY_ID = B.SURVEY_ID
+		<if test="userId != null">
+		WHERE B.USER_ID=#{userId}
+		</if>
+		<if test="userId == null">
+		WHERE B.USER_ID=''
+		</if>
+		AND A.SURVEY_ID = ${surveyId}
+	</select>
+
+	<!-- 설문조사 참여 시작 시 intropage -->
+	<select id="getIntroInfo" resultType="surveyVo"
+		parameterType="surveyVo">
+		SELECT SURVEY_ID AS surveyId
+			, SURVEY_TITLE AS surveyTitle
+			, PARTICIPANT AS participant
+			, PARTICIPANT_CNT AS participantCnt
+			, TO_CHAR(WIN_DT, 'YY. MM. DD.(DY)') AS winDt
+			, REGIST_DT AS registDt
+			, START_DT AS startDt
+			, END_DT AS endDt
+			, TO_CHAR(START_DT, 'YY. MM. DD.(DY)') AS startPeriod
+			, TO_CHAR(END_DT, 'YY. MM. DD.(DY)') AS endPeriod
+			, DEL_YN AS delYn
+			, (TO_DATE(END_DT) - TO_DATE(START_DT)+1) AS surveyPeriod
+		FROM TB_SURVEY
+		WHERE SURVEY_ID = ${surveyId}
+	</select>
+
+	<resultMap type="questionVo" id="questionMap">
+
+		<id property="queId" column="queId" />
+		<result property="surveyId" column="surveyId"/>
+		<result property="queContent" column="queContent" />
+		<result property="queLimit" column="queLimit" />
+		<result property="queRef" column="queRef" />
+		<result property="queType" column="queType" />
+		<result property="queOrder" column="queOrder" />
+		<result property="childOrder" column="childOrder" />
+		<result property="queLimitCnt" column="queLimitCnt" />
+		<result property="categoryId" column="categoryId" />
+		<result property="queCategory" column="queCategory" />
+
+
+		<collection property="selectList" ofType="selectVo"
+			javaType="List">
+			<id property="selId" column="selId" />
+			<result property="queId" column="queId" />
+			<result property="selContent" column="selContent" />
+			<result property="selType" column="selType" />
+			<result property="selNum" column="selNum" />
+		</collection>
+	</resultMap>
+
+	<!-- 설문조사 문제 조회 -->
+	<select id="getSurveyContent" resultMap="questionMap"
+		parameterType="surveyContentDto">
+		SELECT FA.QUE_ORDER queOrder
+			 , FA.QUE_ID queId
+			 , FA.SURVEY_ID surveyId
+			 , FA.QUE_CONTENT queContent
+			 , FA.QUE_LIMIT queLimit
+			 , FA.QUE_REF queRef
+			 , FA.QUE_TYPE queType
+			 , FA.CHILD_ORDER childOrder
+			 , FA.QUE_LIMIT_CNT queLimitCnt
+			 , B.SEL_ID selId
+			 , B.SEL_CONTENT selContent
+			 , B.SEL_TYPE selType
+			 , B.SEL_NUM selNum
+			 , C.CATEGORY_ID categoryId
+			 , C.QUE_CATEGORY queCategory
+		  FROM (
+				 SELECT A.*
+				 , CASE WHEN QUE_TYPE = 0 THEN 0
+				 ELSE QUE_ID
+				 END AS RETYPE
+				 FROM TB_QUESTION A
+			   ) FA
+	LEFT JOIN TB_SELECT B
+		   ON FA.RETYPE = B.QUE_ID
+		 JOIN TB_QUE_CATEGORY C
+		   ON FA.CATEGORY_ID = C.CATEGORY_ID
+		WHERE FA.SURVEY_ID = #{surveyId}
+		ORDER BY 1, FA.QUE_ID, B.SEL_NUM
+	</select>
+	
+	<insert id="insSurveyLog" parameterType="insSurveyDto">
+		INSERT INTO TB_SURVEY_LOG
+		VALUES
+		(
+		SURVEY_LOG_ID_SEQ.NEXTVAL
+		, #{surveyId}
+		, #{userId}
+		, SYSDATE
+		)
+	</insert>
+
+	<select id="getLogId" parameterType="insSurveyDto"
+		resultType="Integer">
+		SELECT MAX(SURVEY_LOG_ID)
+		FROM TB_SURVEY_LOG
+		WHERE SURVEY_ID = #{surveyId}
+		AND USER_ID = #{userId}
+	</select>
+
+	<insert id="insSurveyRes" parameterType="java.util.List">
+
+		INSERT INTO TB_SUBMIT
+		(
+		SUBMIT_ID
+		,USER_ID
+		,SURVEY_ID
+		,QUE_ID
+		,REGIST_DT
+		,VAL_TEXT
+		,SEL_NUM
+		,DEL_YN
+		,SURVEY_LOG_ID
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			SUBMIT_ID_SEQ.NEXTVAL
+			, #{item.userId}
+			, #{item.surveyId}
+			, #{item.queId}
+			, SYSDATE
+			<if test="item.valText != null">
+				, #{item.valText}
+			</if>
+			<if test="item.valText == null">
+				, ''
+			</if>
+			<if test="item.checkValStr != null">
+				, #{item.checkValStr}
+			</if>
+			<if test="item.checkValStr == null">
+				, '0'
+			</if>
+			, 'N'
+			, #{item.surveyLogId}
+			)
+		</foreach>
+	</insert>
+
+	<delete id="delSurvey" parameterType="Integer">
+		DELETE FROM TB_SUBMIT
+		WHERE SURVEY_LOG_ID = #{surveyLogId}
+	</delete>
+
+	<select id="getSubmitInfo" parameterType="surveyContentDto"
+		resultType="updDto">
+		SELECT
+			  A.SUBMIT_ID AS submitId
+			, A.USER_ID AS submitList
+			, A.SURVEY_ID AS surveyId
+			, A.QUE_ID AS queId
+			, A.REGIST_DT AS registDt
+			, A.VAL_TEXT AS valText
+			, A.SEL_NUM AS selNum
+			, B.SURVEY_LOG_ID AS surveyLogId
+			, B.USER_ID AS USERID
+		FROM TB_SUBMIT A
+		JOIN TB_SURVEY_LOG B
+		ON A.SURVEY_LOG_ID = B.SURVEY_LOG_ID
+		WHERE B.USER_ID = #{userId}
+		AND B.SURVEY_ID = #{surveyId}
+		AND B.SURVEY_LOG_ID = #{surveyLogId}
+	</select>
+
+	<select id="getSurveyResCnt" parameterType="surveyVo" resultType="Integer">
+		SELECT count(SURVEY_LOG_ID) 
+		FROM TB_SURVEY_LOG 
+		WHERE SURVEY_ID = #{surveyId}
+		AND USER_ID = #{userId}
+	</select>
+	
+	<select id="getCategory" resultType="queCategoryVo">
+		SELECT CATEGORY_ID AS categoryId
+			,  QUE_CATEGORY queCategory
+		FROM TB_QUE_CATEGORY
+		ORDER BY CATEGORY_ID ASC 
+	</select>
+	
+	<insert id="insSurveyinfo" parameterType="registSurveyDto">
+
+		INSERT INTO TB_SURVEY
+		(
+		SURVEY_ID
+		,SURVEY_TITLE
+		,PARTICIPANT
+		,PARTICIPANT_CNT
+		,WIN_DT
+		,REGIST_DT
+		,START_DT
+		,END_DT
+		,DEL_YN
+		)
+		VALUES
+			(
+			SURVEY_ID_SEQ.NEXTVAL
+			, #{title}
+			, #{participant}
+			, #{participantCnt}
+			, #{dateWinDate}
+			, SYSDATE
+			, #{dateStartDate}
+			, #{dateEndDate}
+			, 'N'
+			)
+	</insert>
+	<select id="getMaxSurveyId" resultType="Integer">
+			SELECT MAX(SURVEY_ID) 
+			FROM TB_SURVEY
+		
+	</select>
+	
+	
+	<insert id="insQueInfo" parameterType="registSurveyDto" >
+		<selectKey keyProperty="queId" resultType="int" order="BEFORE" >
+			SELECT QUE_ID_SEQ.NEXTVAL AS queId FROM DUAL
+		</selectKey>
+		INSERT INTO TB_QUESTION
+			(
+				QUE_ID
+			,   SURVEY_ID
+			,	QUE_CONTENT
+			,	QUE_LIMIT
+			,	QUE_TYPE
+			,	QUE_ORDER
+			,	QUE_LIMIT_CNT
+			,	CATEGORY_ID
+			)
+		VALUES
+			(
+			  #{queId}
+			, #{surveyId}
+			, #{queContent}
+			, #{queLimit}
+			, #{selType}
+			, #{queOrder}
+			, #{queLimitCnt}
+			, #{queCategory}
+			)
+			
+	</insert>
+	
+	<insert id="insSelInfo" parameterType="registSurveyDto">
+		<selectKey keyProperty="queId" resultType="int" order="BEFORE" >
+			SELECT QUE_ID_SEQ.CURRVAL AS queId FROM DUAL
+		</selectKey>
+		INSERT INTO TB_SELECT
+			(
+				SEL_ID
+			,   QUE_ID
+			,	SEL_CONTENT
+			,	SEL_TYPE
+			,	SEL_NUM
+			)
+		VALUES
+			(
+			SEL_ID_SEQ.NEXTVAL
+			, #{queId}
+			, #{selContent}
+			, #{selType}
+			, #{selNum}
+			)
+			
+	</insert>
+	
+	<select	id="getUpdSurveyInfo" parameterType="SurveyContentDto" resultType="registSurveyDto">
+		SELECT SURVEY_TITLE as title
+			,  PARTICIPANT as participant
+			,  PARTICIPANT_CNT as participantCnt
+			,  WIN_DT as dateWinDate
+			,  START_DT as dateStartDate
+			,  END_DT as dateEndDate
+			,  SURVEY_ID as surveyId
+		FROM TB_SURVEY
+		WHERE SURVEY_ID = #{surveyId}
+	
+	</select>
+	
+	<delete id="delSurveyInfo" parameterType="Integer">
+		DELETE FROM TB_SURVEY
+		WHERE SURVEY_ID = #{surveyId}
+	
+	</delete>
+	<delete id="delSurveyQueInfo" parameterType="Integer">
+		DELETE  
+		FROM TB_QUESTION
+		WHERE SURVEY_ID = #{surveyId}
+	
+	</delete>
+	
+	<delete id="delSurveySelInfo" parameterType="Integer">
+		DELETE  
+		FROM TB_SELECT
+		WHERE QUE_ID = #{queId}
+	</delete>
+
+</mapper>

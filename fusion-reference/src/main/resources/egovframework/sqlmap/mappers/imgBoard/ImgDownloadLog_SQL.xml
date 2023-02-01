@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.fusion.imgboard.service.ImgDownloadLogMapper">
+	
+	<!-- CNT등록 -->
+	
+	<!-- 로그정보 insert -->
+	<insert id="insDownLog" parameterType="imgDownloadLogVo">
+		INSERT INTO TB_IMGDOWNLOAD_LOG
+			  (
+			   DOWN_LOG_ID
+			   , DOWN_USER
+			   , IMG_SAVENAME
+			   , DOWN_DATE 
+			   , IMGBOARD_ID
+			  )
+		VALUES (
+				DOWNLOG_SEQ.NEXTVAL
+			   ,#{downUser}
+			   ,#{imgSaveName}
+			   ,SYSDATE
+			   ,#{imgBoardId}
+			   )
+	</insert>
+	<!-- count세기 -->
+	<select id="cntDownFile" resultType="imgDownloadLogVo" parameterType="imgDownloadLogVo">
+	
+		 SELECT COUNT(IMG_SAVENAME) AS downCnt
+		 	  , IMG_SAVENAME AS imgSaveName 
+		 FROM TB_IMGDOWNLOAD_LOG
+		 GROUP BY IMG_SAVENAME
+		 
+	</select>
+	
+	<!-- 다운랭킹 -->
+	<select id="getDownRank" resultType="imgDownloadLogVo" parameterType="imgDownloadLogVo">
+		SELECT *
+		FROM (
+			SELECT ROW_NUMBER() OVER(ORDER BY FA.downCnt DESC) AS ranking , FA.*
+			FROM (	SELECT DISTINCT COUNT(A.IMG_SAVENAME) OVER (PARTITION BY A.IMG_SAVENAME) AS downCnt	
+						, A.IMG_SAVENAME AS imgSaveName
+					   , A.IMGBOARD_ID AS imgBoardId
+				  FROM TB_IMGDOWNLOAD_LOG A
+				  JOIN TB_IMGBOARD_IMG B
+				  ON A.IMG_SAVENAME = B.IMG_SAVENAME
+				  WHERE B.DEL_YN = 'N'
+			)FA
+			) 
+		WHERE ranking BETWEEN 1 AND 10
+
+	
+	</select>
+
+</mapper>

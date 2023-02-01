@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.fusion.imgboard.service.ImgBoardLikeMapper">
+	<!-- 처음 찜했을 때 (로그정보)-->
+	<insert id="insLikeInfo" parameterType="imgBoardLikeVo">
+		INSERT INTO TB_IMGBOARD_LIKE
+		VALUES (
+				LIKE_SEQ.NEXTVAL
+			   ,#{likeYn}
+			   ,#{pushLikeUser}
+			   ,#{imgBoardId}
+			   ,SYSDATE
+			   )
+	</insert>
+	
+	<!-- 처음 눌렀을 때 (카운트정보) -->
+	<insert id="insLikeCntInfo" parameterType="imgBoardLikeCntVo">
+		INSERT INTO TB_IMGBOARD_LIKE_CNT
+		VALUES (
+				LIKECNT_SEQ.NEXTVAL
+			   ,#{imgBoardId}
+			   ,#{pushLikeUser}
+			   ,#{likeYn}
+			   ,SYSDATE
+			   )
+	</insert>
+	
+	<!-- 나의 좋아요 여부 상태 조회 (수정해야될듯)-->
+	<select id="getLikeYn" resultType="imgBoardLikeCntVo" parameterType="String">
+	
+	  SELECT LIKE_CNT_ID likeCntId
+			  , IMGBOARD_ID AS imgBoardId
+			  , PUSHLIKE_USER AS pushLikeUser
+			  , LIKE_YN AS likeYn
+			  , LIKECNT_REGIST_DT AS likeCntRegistDt
+		 FROM TB_IMGBOARD_LIKE_CNT 
+		 WHERE PUSHLIKE_USER = #{userId}
+		 ORDER BY like_cnt_id DESC
+	</select>
+	
+	<!-- 좋아요 여부 변경 (카운트 테이블 정보) -->
+	
+	<delete id="upLikeYn" parameterType="imgBoardLikeCntVo">
+		DELETE FROM TB_IMGBOARD_LIKE_CNT
+		WHERE PUSHLIKE_USER = #{pushLikeUser}
+		AND IMGBOARD_ID = #{imgBoardId} 
+	</delete>
+	
+	<!-- 등록했는지  -->
+	<select id="getLikeYnRes" parameterType="imgBoardLikeCntVo" resultType="Integer">
+		SELECT COUNT(IMGBOARD_ID) 
+	    FROM TB_IMGBOARD_LIKE_CNT
+	    WHERE PUSHLIKE_USER = #{pushLikeUser}
+	    AND IMGBOARD_ID = #{imgBoardId};
+	</select>
+	
+	<!-- 좋아요 랭크  -->
+	<select id="getLikeRank" parameterType="imgBoardLikeVo" resultType="imgBoardLikeVo">
+		SELECT FB.*
+		FROM(
+			 SELECT ROW_NUMBER() OVER (ORDER BY FA.likeCnt DESC) AS ranking, likeCnt, FA.*
+			 FROM(
+			 	 SELECT DISTINCT COUNT(A.LIKE_YN) OVER (PARTITION BY A.IMGBOARD_ID) AS likeCnt
+			 		  , A.IMGBOARD_ID AS imgBoardId
+			 		  , C.TITLE AS title
+			     FROM TB_IMGBOARD_LIKE_CNT A
+			 	 JOIN TB_IMGBOARD B
+			 	 ON A.IMGBOARD_ID = B.IMGBOARD_ID
+			 	 JOIN TB_IMGBOARD C
+			 	 ON A.IMGBOARD_ID = C.IMGBOARD_ID
+			 	 WHERE A.LIKE_YN ='Y'
+			 	 AND B.DEL_YN = 'N'
+			 	 AND B.BOARD_NUM = #{boardNum}) FA
+			 	) FB
+		WHERE ranking BETWEEN 1 AND 10;
+		
+	
+	</select>
+</mapper>

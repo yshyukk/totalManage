@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+    <typeAliases>
+		<typeAlias alias="boardVo" type="egovframework.fusion.board.vo.BoardVO"/>
+		<typeAlias alias="userVo" type="egovframework.fusion.user.vo.UserVO"/>
+		<typeAlias alias="imgBoardVo" type="egovframework.fusion.imgboard.vo.ImgBoardVO"/>
+		<typeAlias alias="imgVo" type="egovframework.fusion.imgboard.vo.ImgVO"/>
+		<typeAlias alias="imgBoardLikeVo" type="egovframework.fusion.imgboard.vo.ImgBoardLikeVO"/>
+		<typeAlias alias="imgBoardLikeCntVo" type="egovframework.fusion.imgboard.vo.ImgBoardLikeCntVO"/>
+		<typeAlias alias="imgBoardCommentVo" type="egovframework.fusion.imgboard.vo.ImgBoardCommentVO"/>
+		<typeAlias alias="imgBoardCntVo" type="egovframework.fusion.imgboard.vo.ImgBoardCntVO"/>
+		<typeAlias alias="hashTagVo" type="egovframework.fusion.imgboard.vo.HashTagVO"/>
+		<typeAlias alias="pagingVo" type="egovframework.fusion.comm.vo.PagingVO"/>
+		<typeAlias alias="hashTagUpdateVo" type="egovframework.fusion.imgboard.vo.HashTagUpdateVO"/>
+		<typeAlias alias="ImgBoardListDTO" type="egovframework.fusion.imgboard.dto.ImgBoardListDTO"/>		
+		<typeAlias alias="imgDownloadLogVo" type="egovframework.fusion.imgboard.vo.ImgDownloadLogVO"/>
+		<typeAlias alias="surveyVo" type="egovframework.fusion.survey.vo.SurveyVO"/>
+		<typeAlias alias="questionVo" type="egovframework.fusion.survey.vo.QuestionVO"/>
+		<typeAlias alias="selectVo" type="egovframework.fusion.survey.vo.SelectVO"/>
+		<typeAlias alias="submitVo" type="egovframework.fusion.survey.vo.SubmitVO"/>
+		<typeAlias alias="surveyContentDto" type="egovframework.fusion.survey.dto.SurveyContentDTO"/>
+		<typeAlias alias="insSurveyDto" type="egovframework.fusion.survey.dto.InsSurveyDTO"/>
+		<typeAlias alias="updDto" type="egovframework.fusion.survey.dto.UpdDTO"/>
+		<typeAlias alias="queCategoryVo" type="egovframework.fusion.survey.vo.QueCategoryVO"/>
+		<typeAlias alias="registSurveyDto" type="egovframework.fusion.survey.dto.RegistSurveyDTO"/>
+		<typeAlias alias="menuVo" type="egovframework.fusion.totalManagement.vo.MenuVO"/>
+		<typeAlias alias="totalSearchDto" type="egovframework.fusion.totalManagement.dto.TotalSearchDTO"/>
+	
+					
+    </typeAliases>
+</configuration>
